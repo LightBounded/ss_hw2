@@ -52,6 +52,15 @@ typedef struct
     token_type token;
 } token;
 
+typedef struct
+{
+    token *tokens;
+    int size;
+    int capacity;
+} list;
+
+list *token_list;
+
 char peekc()
 {
     int c = getc(input_file);
@@ -154,6 +163,52 @@ int is_special_symbol(char c)
     return 0;
 }
 
+list *create_list()
+{
+    list *l = malloc(sizeof(list));
+    l->size = 0;
+    l->capacity = 10;
+    l->tokens = malloc(sizeof(token) * l->capacity);
+    return l;
+}
+
+list *destroy_list(list *l)
+{
+    free(l->tokens);
+    free(l);
+    return NULL;
+}
+
+list *append_token(list *l, token t)
+{
+    if (l->size == l->capacity)
+    {
+        l->capacity *= 2;
+        l->tokens = realloc(l->tokens, sizeof(token) * l->capacity);
+    }
+    l->tokens[l->size++] = t;
+    return l;
+}
+
+void add_token(list *l, token t)
+{
+    if (l->size == l->capacity)
+    {
+        l->capacity *= 2;
+        l->tokens = realloc(l->tokens, sizeof(token) * l->capacity);
+    }
+    l->tokens[l->size++] = t;
+}
+
+void print_tokens(list *l)
+{
+    int i;
+    for (i = 0; i < l->size; i++)
+    {
+        printf("%s %d\n", l->tokens[i].lexeme, l->tokens[i].token);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -177,25 +232,35 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    token_list = create_list();
+
     char c;
     char buffer[MAX_IDENTIFIER_LENGTH + 1] = {'\0'};
     int buffer_index = 0;
     while ((c = fgetc(input_file)) != EOF)
     {
-        if (iscntrl(c) || isspace(c))
+        if (iscntrl(c) || isspace(c)) // skip control characters and whitespace
         {
             c = fgetc(input_file);
         }
-        if (isdigit(c))
+        if (isdigit(c)) // handle numbers
         {
             int value;
+            buffer[buffer_index++] = c;
             while (1)
             {
 
                 char nextc = peekc();
                 if (isspace(nextc) || is_special_symbol(nextc))
                 {
-                    printf("number: %s\n", buffer);
+                    if (buffer_index > MAX_NUMBER_LENGTH)
+                    {
+                        printf("ERROR: NUMBER TOO LONG\n");
+                        break;
+                    }
+
+                    append_token(token_list, (token){.lexeme = buffer, .token = numbersym});
+                    clear_buffer(buffer, buffer_index);
                     break;
                 }
                 else if (isdigit(nextc))
@@ -215,7 +280,7 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        else if (isalpha(c))
+        else if (isalpha(c)) // handle identifiers and reserved words
         {
 
             buffer[buffer_index++] = c;
@@ -228,45 +293,52 @@ int main(int argc, char *argv[])
                     int token_value = handle_reserved_word(buffer);
                     if (token_value)
                     {
-                        printf("reserved word: %s\n", buffer);
-                        printf("token value: %d\n", token_value);
+                        append_token(token_list, (token){.lexeme = buffer, .token = token_value});
                         clear_buffer(buffer, buffer_index);
                         buffer_index = 0;
                         break;
                     }
                     else
                     {
-
                         // check if identifier
                         if (buffer_index > MAX_IDENTIFIER_LENGTH)
                         {
                             printf("ERROR: IDENTIFIER TOO LONG\n");
                             break;
                         }
-                        else
-                        {
-                            printf("identifier: %s\n", buffer);
-                            clear_buffer(buffer, buffer_index);
-                            buffer_index = 0;
-                            break;
-                        }
+
+                        append_token(token_list, (token){.lexeme = buffer, .token = identsym});
+                        clear_buffer(buffer, buffer_index);
+                        buffer_index = 0;
+                        break;
                     }
                     break;
                 }
                 else if (isalnum(nextc))
                 {
                     c = getc(input_file);
-                    printf("nextc: %c\n", nextc);
                     buffer[buffer_index++] = c;
                 }
             }
         }
-        else if (is_special_symbol(c))
+        else if (is_special_symbol(c)) // handle special symbols
         {
+            buffer[buffer_index++] = c;
             char nextc = peekc();
-            printf("c: %c\n", c);
+            if (is_special_symbol(nextc))
+            {
+                c = getc(input_file);
+                buffer[buffer_index++] = c;
+                append_token(token_list, (token){.lexeme = buffer, .token = handle_special_symbol(buffer)});
+            }
+            else
+            {
+                append_token(token_list, (token){.lexeme = buffer, .token = handle_special_symbol(buffer)});
+            }
         }
     }
 
+    print_tokens(token_list);
+    destroy_list(token_list);
     return 0;
 }
