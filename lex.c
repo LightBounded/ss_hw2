@@ -205,7 +205,7 @@ void print_tokens(list *l)
     int i;
     for (i = 0; i < l->size; i++)
     {
-        printf("%s %d\n", l->tokens[i].lexeme, l->tokens[i].token);
+        printf("%s\t%d\n", l->tokens[i].lexeme, l->tokens[i].token);
     }
 }
 
@@ -259,7 +259,10 @@ int main(int argc, char *argv[])
                         break;
                     }
 
-                    append_token(token_list, (token){.lexeme = buffer, .token = numbersym});
+                    token t;
+                    t.token = numbersym;
+                    strcpy(t.lexeme, buffer);
+                    append_token(token_list, t);
                     clear_buffer(buffer, buffer_index);
                     break;
                 }
@@ -293,7 +296,10 @@ int main(int argc, char *argv[])
                     int token_value = handle_reserved_word(buffer);
                     if (token_value)
                     {
-                        append_token(token_list, (token){.lexeme = buffer, .token = token_value});
+                        token t;
+                        t.token = token_value;
+                        strcpy(t.lexeme, buffer);
+                        append_token(token_list, t);
                         clear_buffer(buffer, buffer_index);
                         buffer_index = 0;
                         break;
@@ -307,7 +313,10 @@ int main(int argc, char *argv[])
                             break;
                         }
 
-                        append_token(token_list, (token){.lexeme = buffer, .token = identsym});
+                        token t;
+                        t.token = identsym;
+                        strcpy(t.lexeme, buffer);
+                        append_token(token_list, t);
                         clear_buffer(buffer, buffer_index);
                         buffer_index = 0;
                         break;
@@ -329,11 +338,21 @@ int main(int argc, char *argv[])
             {
                 c = getc(input_file);
                 buffer[buffer_index++] = c;
-                append_token(token_list, (token){.lexeme = buffer, .token = handle_special_symbol(buffer)});
+                token t;
+                t.token = handle_special_symbol(buffer);
+                strcpy(t.lexeme, buffer);
+                append_token(token_list, t);
+                clear_buffer(buffer, buffer_index);
+                buffer_index = 0;
             }
             else
             {
-                append_token(token_list, (token){.lexeme = buffer, .token = handle_special_symbol(buffer)});
+                token t;
+                t.token = handle_special_symbol(buffer);
+                strcpy(t.lexeme, buffer);
+                append_token(token_list, t);
+                clear_buffer(buffer, buffer_index);
+                buffer_index = 0;
             }
         }
     }
