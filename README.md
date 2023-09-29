@@ -2,4 +2,7 @@
 Authored by Caleb Rivera and Matthew Labrada
 
 ## How to run and compile
-TODO: Write this section
+```c
+gcc lex.c
+./a.out <input_file> <output_file>
+ ```
