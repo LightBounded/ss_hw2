@@ -264,6 +264,7 @@ int main(int argc, char *argv[])
                     strcpy(t.lexeme, buffer);
                     append_token(token_list, t);
                     clear_buffer(buffer, buffer_index);
+                    buffer_index = 0;
                     break;
                 }
                 else if (isdigit(nextc))
