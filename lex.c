@@ -316,9 +316,10 @@ int main(int argc, char *argv[])
                     break;
                 else if (isalpha(nextc))
                 {
+
+                    printf("%10s %20d\n", buffer, numbersym);
                     clear_to_index(buffer, buffer_index);
                     buffer_index = 0;
-                    printf("ERROR: INVALID IDENTIFIER\n");
                     break;
                 }
             }
@@ -447,7 +448,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    printf("\n");
+    printf("\n\n");
     printf("Token List:\n");
     print_tokens(token_list);
     destroy_list(token_list);
