@@ -175,7 +175,17 @@ int is_special_symbol(char c)
             c == '>' ||
             c == ':' ||
             c == ';' ||
-            c == '&');
+            c == '&' ||
+            c == '%' ||
+            c == '!' ||
+            c == '@' ||
+            c == '#' ||
+            c == '$' ||
+            c == '?' ||
+            c == '^' ||
+            c == '`' ||
+            c == '~' ||
+            c == '|');
 }
 
 // create a list of tokens
@@ -293,7 +303,7 @@ int main(int argc, char *argv[])
                     token t;
                     if (buffer_index > MAX_NUMBER_LENGTH)
                     {
-                        printf("%10s %20s", buffer, "ERROR: NUMBER TOO LONG");
+                        printf("%10s %20s\n", buffer, "ERROR: NUMBER TOO LONG");
                     }
                     else
                     {
@@ -417,6 +427,24 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
+                // if current symbol is valid, but with the next symbol is invalid, stop
+                if (!handle_special_symbol(strcat(buffer, &nextc)))
+                {
+                    printf("%10c %20s\n", c, "ERROR: INVALID SYMBOL");
+                    clear_to_index(buffer, buffer_index);
+                    buffer_index = 0;
+                    continue;
+                }
+
+                // if current symbol is invalid stop
+                if (!handle_special_symbol(buffer))
+                {
+                    printf("%10c %20s\n", c, "ERROR: INVALID SYMBOL");
+                    clear_to_index(buffer, buffer_index);
+                    buffer_index = 0;
+                    continue;
+                }
+
                 c = getc(input_file);
                 buffer[buffer_index++] = c;
                 token t;
@@ -436,12 +464,15 @@ int main(int argc, char *argv[])
                 token t;
                 int token_value = handle_special_symbol(buffer);
                 if (!token_value)
-                    printf("%10s %20s\n", buffer, "ERROR: INVALID SYMBOL");
+                    printf("%10c %20s\n", c, "ERROR: INVALID SYMBOL");
                 else
+                {
                     printf("%10s %20d\n", buffer, token_value);
-                sprintf(t.value, "%d", token_value);
-                strcpy(t.lexeme, buffer);
-                append_token(token_list, t);
+                    sprintf(t.value, "%d", token_value);
+                    strcpy(t.lexeme, buffer);
+                    append_token(token_list, t);
+                }
+
                 clear_to_index(buffer, buffer_index);
                 buffer_index = 0;
             }
