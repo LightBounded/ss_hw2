@@ -34,4 +34,4 @@ else
 /* Comment should be ignored and not tokenized */
 identifierToLong
 9999999999
-!@_#$^ 
+!@_#$^

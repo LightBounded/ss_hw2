@@ -436,17 +436,16 @@ int main(int argc, char *argv[])
                 token t;
                 int token_value = handle_special_symbol(buffer);
                 if (!token_value)
-                {
                     for (int i = 0; i < buffer_index; i++)
-                    {
                         printf("%10c %20s\n", buffer[i], "ERROR: INVALID SYMBOL");
-                    }
-                }
                 else
+                {
                     printf("%10s %20d\n", buffer, token_value);
-                sprintf(t.value, "%d", token_value);
-                strcpy(t.lexeme, buffer);
-                append_token(token_list, t);
+                    sprintf(t.value, "%d", token_value);
+                    strcpy(t.lexeme, buffer);
+                    append_token(token_list, t);
+                }
+
                 clear_to_index(buffer, buffer_index);
                 buffer_index = 0;
             }
