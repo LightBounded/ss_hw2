@@ -326,7 +326,11 @@ int main(int argc, char *argv[])
                 else if (isalpha(nextc))
                 {
 
+                    token t;
                     printf("%10s %20d\n", buffer, numbersym);
+                    sprintf(t.value, "%d", numbersym);
+                    strcpy(t.lexeme, buffer);
+                    append_token(token_list, t);
                     clear_to_index(buffer, buffer_index);
                     buffer_index = 0;
                     break;
