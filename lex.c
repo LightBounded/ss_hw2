@@ -277,7 +277,6 @@ int main(int argc, char *argv[])
 
     printf("Source Program:\n");
     print_source_code();
-    printf("\n");
     printf("Lexeme Table:\n");
 
     token_list = create_list();
@@ -479,7 +478,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    printf("\n\n");
+    printf("\n");
     printf("Token List:\n");
     print_tokens(token_list);
     destroy_list(token_list);
