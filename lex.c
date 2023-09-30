@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdarg.h>
 
 #define MAX_IDENTIFIER_LENGTH 11
 #define MAX_NUMBER_LENGTH 5
@@ -16,58 +17,61 @@
 FILE *input_file;
 FILE *output_file;
 
+// Define an enumeration for token types
 typedef enum
 {
-    skipsym = 1,
-    identsym,
-    numbersym,
-    plussym,
-    minussym,
-    multsym,
-    slashsym,
-    ifelsym,
-    eqsym,
-    neqsym,
-    lessym,
-    leqsym,
-    gtrsym,
-    geqsym,
-    lparentsym,
-    rparentsym,
-    commasym,
-    semicolonsym,
-    periodsym,
-    becomessym,
-    beginsym,
-    endsym,
-    ifsym,
-    thensym,
-    whilesym,
-    dosym,
-    callsym,
-    constsym,
-    varsym,
-    procsym,
-    writesym,
-    readsym,
-    elsesym
-} token_type;
+    skipsym = 1,       // Represents a skip symbol
+    identsym,          // Represents an identifier
+    numbersym,         // Represents a number
+    plussym,           // Represents the '+' symbol
+    minussym,          // Represents the '-' symbol
+    multsym,           // Represents the '*' symbol
+    slashsym,          // Represents the '/' symbol
+    ifelsym,           // Represents a combined 'if', 'else'
+    eqsym,             // Represents the '=' symbol
+    neqsym,            // Represents the '<>' symbol
+    lessym,            // Represents the '<' symbol
+    leqsym,            // Represents the '<=' symbol
+    gtrsym,            // Represents the '>' symbol
+    geqsym,            // Represents the '>=' symbol
+    lparentsym,        // Represents the '(' symbol
+    rparentsym,        // Represents the ')' symbol
+    commasym,          // Represents the ',' symbol
+    semicolonsym,      // Represents the ';' symbol
+    periodsym,         // Represents the '.' symbol
+    becomessym,        // Represents the ':=' symbol
+    beginsym,          // Represents the 'begin' keyword
+    endsym,            // Represents the 'end' keyword
+    ifsym,             // Represents the 'if' keyword
+    thensym,           // Represents the 'then' keyword
+    whilesym,          // Represents the 'while' keyword
+    dosym,             // Represents the 'do' keyword
+    callsym,           // Represents the 'call' keyword
+    constsym,          // Represents the 'const' keyword
+    varsym,            // Represents the 'var' keyword
+    procsym,           // Represents the 'procedure' keyword
+    writesym,          // Represents the 'write' keyword
+    readsym,           // Represents the 'read' keyword
+    elsesym            // Represents the 'else' keyword
+} token_type;   
 
+// Struct to represent token
 typedef struct
 {
-    char lexeme[MAX_BUFFER_LENGTH + 1];
-    char value[MAX_BUFFER_LENGTH + 1];
+    char lexeme[MAX_BUFFER_LENGTH + 1]; // String representation of token (Ex: "+", "-", "end")
+    char value[MAX_BUFFER_LENGTH + 1]; // Value/Type of token
 } token;
 
 typedef struct
 {
-    token *tokens;
-    int size;
-    int capacity;
+    token *tokens; // Pointer to array of token structs
+    int size; // Num of tokens in list
+    int capacity; // Capacity of list
 } list;
 
-list *token_list;
+list *token_list; // Global pointer to list that holds all tokens
 
+// Peek at the next character from the input file without consuming it
 char peekc()
 {
     int c = getc(input_file);
@@ -75,21 +79,42 @@ char peekc()
     return (char)c;
 }
 
+// Print formatted output to both the console and the output file
+void print_both(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+
+    va_start(args, format);
+    vfprintf(output_file, format, args);
+    va_end(args);
+}
+
+// Print the entire source code from the input file to both the console and the output file
 void print_source_code()
 {
     char c;
+    char lastChar = 0;  // To keep track of the last character printed
     while ((c = fgetc(input_file)) != EOF)
-        printf("%c", c);
-    rewind(input_file);
+    {
+        print_both("%c", c);
+        lastChar = c;
+    }
+    if (lastChar != '\n')  // If the last character wasn't a newline, print one
+        print_both("\n");
+    rewind(input_file); // Reset file pointer to the beginning of the file
 }
 
+// Clear a string up to a specified index by setting characters to null
 void clear_to_index(char *str, int index)
 {
     for (int i = 0; i < index; i++)
         str[i] = '\0';
 }
 
-// handle reserved words
+// Check if given buffer matches any reserved word, return its corresponding token value
 int handle_reserved_word(char *buffer)
 {
     if (strcmp(buffer, "const") == 0)
@@ -123,7 +148,7 @@ int handle_reserved_word(char *buffer)
     return 0; // invalid reserved word
 }
 
-// handle special symbols
+// Check if given buffer matches any special symbol, return its corresponding token value
 int handle_special_symbol(char *buffer)
 {
     if (strcmp(buffer, "+") == 0)
@@ -161,9 +186,10 @@ int handle_special_symbol(char *buffer)
     return 0; // invalid special symbol
 }
 
-// check if character is a special symbol
+// Check if a given character is a special symbol
 int is_special_symbol(char c)
 {
+    // If character matches, return 1 else return 0
     return (c == '+' ||
             c == '-' ||
             c == '*' ||
@@ -190,7 +216,7 @@ int is_special_symbol(char c)
             c == '|');
 }
 
-// create a list of tokens
+// Create and initialize new list for storing tokens
 list *create_list()
 {
     list *l = malloc(sizeof(list));
@@ -200,7 +226,7 @@ list *create_list()
     return l;
 }
 
-// destroy a list of tokens
+// Free the memory used by a list and its tokens
 list *destroy_list(list *l)
 {
     free(l->tokens);
@@ -208,7 +234,7 @@ list *destroy_list(list *l)
     return NULL;
 }
 
-// append a token to a list
+// Append a token to a list, resizing the list if necessary
 list *append_token(list *l, token t)
 {
     if (l->size == l->capacity)
@@ -220,7 +246,7 @@ list *append_token(list *l, token t)
     return l;
 }
 
-// add a token to a list
+// Add a token to a list, resizing the list if necessary
 void add_token(list *l, token t)
 {
     if (l->size == l->capacity)
@@ -231,34 +257,43 @@ void add_token(list *l, token t)
     l->tokens[l->size++] = t;
 }
 
-// print a lexeme table
+// Print the lexeme table to both the console and output file
 void print_lexeme_table(list *l)
 {
-
     for (int i = 0; i < l->size; i++)
-        printf("%10s %20s\n", l->tokens[i].lexeme, l->tokens[i].value);
+        print_both("%10s %20s\n", l->tokens[i].lexeme, l->tokens[i].value);
 }
 
-// print a list of tokens
+// Print the tokens to both the console and output file
 void print_tokens(list *l)
 {
+    int counter; // Counter to keep track of the number of tokens printed for sake of ommitting extra new line character at end of file
+
     for (int i = 0; i < l->size; i++)
     {
-        printf("%s ", l->tokens[i].value);
+        print_both("%s ", l->tokens[i].value);
         char identifier_value[3] = {0}, number_value[3] = {0};
         sprintf(identifier_value, "%d", identsym);
         sprintf(number_value, "%d", numbersym);
+
+        // Check if the token value matches identifier or number and print its lexeme
         if (strcmp(l->tokens[i].value, identifier_value) == 0 || strcmp(l->tokens[i].value, number_value) == 0)
-            printf("%s ", l->tokens[i].lexeme);
+            print_both("%s ", l->tokens[i].lexeme);
+        counter++;
     }
-    printf("\n");
+
+    // Print a newline if we haven't reached the last token
+    if (counter < l->size - 1){
+        print_both("\n");
+    }
+    
 }
 
 int main(int argc, char *argv[])
 {
     if (argc != 3)
     {
-        printf("Usage: %s <input file> <output file>\n", argv[0]);
+        print_both("Usage: %s <input file> <output file>\n", argv[0]);
         return 1;
     }
 
@@ -267,26 +302,29 @@ int main(int argc, char *argv[])
 
     if (input_file == NULL)
     {
-        printf("Error: Could not open input file %s\n", argv[1]);
+        print_both("Error: Could not open input file %s\n", argv[1]);
         return 1;
     }
 
     if (output_file == NULL)
     {
-        printf("Error: Could not open output file %s\n", argv[2]);
+        print_both("Error: Could not open output file %s\n", argv[2]);
         return 1;
     }
 
-    printf("Source Program:\n");
+    print_both("Source Program:\n");
     print_source_code();
-    printf("\n");
-    printf("Lexeme Table:\n");
+    print_both("\n");
+    print_both("Lexeme Table:\n");
+    print_both("\n");
+    print_both("%10s %20s\n", "lexeme", "token type");
 
     token_list = create_list();
 
     char c;
     char buffer[MAX_BUFFER_LENGTH + 1] = {0};
     int buffer_index = 0;
+
     while ((c = fgetc(input_file)) != EOF)
     {
         if (iscntrl(c) || isspace(c)) // skip control characters and whitespace
@@ -298,18 +336,17 @@ int main(int argc, char *argv[])
             buffer[buffer_index++] = c;
             while (1)
             {
-
                 char nextc = peekc();
                 if (isspace(nextc) || is_special_symbol(nextc))
                 {
                     token t;
                     if (buffer_index > MAX_NUMBER_LENGTH)
                     {
-                        printf("%10s %20s\n", buffer, "ERROR: NUMBER TOO LONG");
+                        print_both("%10s %20s\n", buffer, "ERROR: NUMBER TOO LONG");
                     }
                     else
                     {
-                        printf("%10s %20d\n", buffer, numbersym);
+                        print_both("%10s %20d\n", buffer, numbersym);
                         sprintf(t.value, "%d", numbersym);
                         strcpy(t.lexeme, buffer);
                         append_token(token_list, t);
@@ -328,9 +365,8 @@ int main(int argc, char *argv[])
                     break;
                 else if (isalpha(nextc))
                 {
-
                     token t;
-                    printf("%10s %30d\n", buffer, numbersym);
+                    print_both("%10s %20d\n", buffer, numbersym);
                     sprintf(t.value, "%d", numbersym);
                     strcpy(t.lexeme, buffer);
                     append_token(token_list, t);
@@ -342,7 +378,6 @@ int main(int argc, char *argv[])
         }
         else if (isalpha(c)) // handle identifiers and reserved words
         {
-
             buffer[buffer_index++] = c;
             while (1)
             {
@@ -354,7 +389,7 @@ int main(int argc, char *argv[])
                     if (token_value)
                     {
                         token t;
-                        printf("%10s %20d\n", buffer, token_value);
+                        print_both("%10s %20d\n", buffer, token_value);
                         sprintf(t.value, "%d", token_value);
                         strcpy(t.lexeme, buffer);
                         append_token(token_list, t);
@@ -367,11 +402,11 @@ int main(int argc, char *argv[])
                         token t;
                         if (buffer_index > MAX_IDENTIFIER_LENGTH)
                         {
-                            printf("%10s %20s\n", buffer, "ERROR: IDENTIFIER TOO LONG");
+                            print_both("%10s %20s\n", buffer, "ERROR: IDENTIFIER TOO LONG");
                         }
                         else
                         {
-                            printf("%10s %20d\n", buffer, identsym);
+                            print_both("%10s %20d\n", buffer, identsym);
                             sprintf(t.value, "%d", identsym);
                             strcpy(t.lexeme, buffer);
                             append_token(token_list, t);
@@ -392,7 +427,6 @@ int main(int argc, char *argv[])
         }
         else if (is_special_symbol(c)) // handle special symbols
         {
-
             buffer[buffer_index++] = c;
             char nextc = peekc();
 
@@ -439,10 +473,10 @@ int main(int argc, char *argv[])
                 int token_value = handle_special_symbol(buffer);
                 if (!token_value)
                     for (int i = 0; i < buffer_index; i++)
-                        printf("%10c %20s\n", buffer[i], "ERROR: INVALID SYMBOL");
+                        print_both("%10c %20s\n", buffer[i], "ERROR: INVALID SYMBOL");
                 else
                 {
-                    printf("%10s %20d\n", buffer, token_value);
+                    print_both("%10s %20d\n", buffer, token_value);
                     sprintf(t.value, "%d", token_value);
                     strcpy(t.lexeme, buffer);
                     append_token(token_list, t);
@@ -456,10 +490,10 @@ int main(int argc, char *argv[])
                 token t;
                 int token_value = handle_special_symbol(buffer);
                 if (!token_value)
-                    printf("%10c %20s\n", c, "ERROR: INVALID SYMBOL");
+                    print_both("%10c %20s\n", c, "ERROR: INVALID SYMBOL");
                 else
                 {
-                    printf("%10s %20d\n", buffer, token_value);
+                    print_both("%10s %20d\n", buffer, token_value);
                     sprintf(t.value, "%d", token_value);
                     strcpy(t.lexeme, buffer);
                     append_token(token_list, t);
@@ -471,9 +505,10 @@ int main(int argc, char *argv[])
         }
     }
 
-    printf("\n");
-    printf("Token List:\n");
+    print_both("\n");
+    print_both("Token List:\n");
     print_tokens(token_list);
     destroy_list(token_list);
+    
     return 0;
 }
