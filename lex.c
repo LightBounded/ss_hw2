@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
                 {
 
                     token t;
-                    printf("%10s %20d\n", buffer, numbersym);
+                    printf("%10s %30d\n", buffer, numbersym);
                     sprintf(t.value, "%d", numbersym);
                     strcpy(t.lexeme, buffer);
                     append_token(token_list, t);
