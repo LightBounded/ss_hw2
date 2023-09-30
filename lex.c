@@ -118,7 +118,7 @@ int handle_reserved_word(char *buffer)
         return readsym;
     else if (strcmp(buffer, "write") == 0)
         return writesym;
-    else if (strcmp(buffer, "ifel"))
+    else if (strcmp(buffer, "ifel") == 0)
         return ifelsym;
     return 0; // invalid reserved word
 }
