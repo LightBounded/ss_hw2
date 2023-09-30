@@ -277,6 +277,7 @@ int main(int argc, char *argv[])
 
     printf("Source Program:\n");
     print_source_code();
+    printf("\n");
     printf("Lexeme Table:\n");
 
     token_list = create_list();
@@ -430,30 +431,17 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
-                // if current symbol is valid, but with the next symbol is invalid, stop
-                if (!handle_special_symbol(strcat(buffer, &nextc)))
-                {
-                    printf("%10c %20s\n", c, "ERROR: INVALID SYMBOL");
-                    clear_to_index(buffer, buffer_index);
-                    buffer_index = 0;
-                    continue;
-                }
-
-                // if current symbol is invalid stop
-                if (!handle_special_symbol(buffer))
-                {
-                    printf("%10c %20s\n", c, "ERROR: INVALID SYMBOL");
-                    clear_to_index(buffer, buffer_index);
-                    buffer_index = 0;
-                    continue;
-                }
-
                 c = getc(input_file);
                 buffer[buffer_index++] = c;
                 token t;
                 int token_value = handle_special_symbol(buffer);
                 if (!token_value)
-                    printf("%10s %20s\n", buffer, "ERROR: INVALID SYMBOL");
+                {
+                    for (int i = 0; i < buffer_index; i++)
+                    {
+                        printf("%10c %20s\n", buffer[i], "ERROR: INVALID SYMBOL");
+                    }
+                }
                 else
                     printf("%10s %20d\n", buffer, token_value);
                 sprintf(t.value, "%d", token_value);
