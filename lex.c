@@ -508,7 +508,8 @@ int main(int argc, char *argv[])
     print_both("\n");
     print_both("Token List:\n");
     print_tokens(token_list);
+    printf("\n");
     destroy_list(token_list);
-    
+
     return 0;
 }
