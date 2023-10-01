@@ -1,5 +1,5 @@
 /*
-    COP 3401 Systems Software
+    COP 3402 Systems Software
     Lexical Analyzer
     Authored by Caleb Rivera and Matthew Labrada
 */
@@ -20,53 +20,53 @@ FILE *output_file;
 // Define an enumeration for token types
 typedef enum
 {
-    skipsym = 1,       // Represents a skip symbol
-    identsym,          // Represents an identifier
-    numbersym,         // Represents a number
-    plussym,           // Represents the '+' symbol
-    minussym,          // Represents the '-' symbol
-    multsym,           // Represents the '*' symbol
-    slashsym,          // Represents the '/' symbol
-    ifelsym,           // Represents a combined 'if', 'else'
-    eqsym,             // Represents the '=' symbol
-    neqsym,            // Represents the '<>' symbol
-    lessym,            // Represents the '<' symbol
-    leqsym,            // Represents the '<=' symbol
-    gtrsym,            // Represents the '>' symbol
-    geqsym,            // Represents the '>=' symbol
-    lparentsym,        // Represents the '(' symbol
-    rparentsym,        // Represents the ')' symbol
-    commasym,          // Represents the ',' symbol
-    semicolonsym,      // Represents the ';' symbol
-    periodsym,         // Represents the '.' symbol
-    becomessym,        // Represents the ':=' symbol
-    beginsym,          // Represents the 'begin' keyword
-    endsym,            // Represents the 'end' keyword
-    ifsym,             // Represents the 'if' keyword
-    thensym,           // Represents the 'then' keyword
-    whilesym,          // Represents the 'while' keyword
-    dosym,             // Represents the 'do' keyword
-    callsym,           // Represents the 'call' keyword
-    constsym,          // Represents the 'const' keyword
-    varsym,            // Represents the 'var' keyword
-    procsym,           // Represents the 'procedure' keyword
-    writesym,          // Represents the 'write' keyword
-    readsym,           // Represents the 'read' keyword
-    elsesym            // Represents the 'else' keyword
-} token_type;   
+    skipsym = 1,  // Represents a skip symbol
+    identsym,     // Represents an identifier
+    numbersym,    // Represents a number
+    plussym,      // Represents the '+' symbol
+    minussym,     // Represents the '-' symbol
+    multsym,      // Represents the '*' symbol
+    slashsym,     // Represents the '/' symbol
+    ifelsym,      // Represents a combined 'if', 'else'
+    eqsym,        // Represents the '=' symbol
+    neqsym,       // Represents the '<>' symbol
+    lessym,       // Represents the '<' symbol
+    leqsym,       // Represents the '<=' symbol
+    gtrsym,       // Represents the '>' symbol
+    geqsym,       // Represents the '>=' symbol
+    lparentsym,   // Represents the '(' symbol
+    rparentsym,   // Represents the ')' symbol
+    commasym,     // Represents the ',' symbol
+    semicolonsym, // Represents the ';' symbol
+    periodsym,    // Represents the '.' symbol
+    becomessym,   // Represents the ':=' symbol
+    beginsym,     // Represents the 'begin' keyword
+    endsym,       // Represents the 'end' keyword
+    ifsym,        // Represents the 'if' keyword
+    thensym,      // Represents the 'then' keyword
+    whilesym,     // Represents the 'while' keyword
+    dosym,        // Represents the 'do' keyword
+    callsym,      // Represents the 'call' keyword
+    constsym,     // Represents the 'const' keyword
+    varsym,       // Represents the 'var' keyword
+    procsym,      // Represents the 'procedure' keyword
+    writesym,     // Represents the 'write' keyword
+    readsym,      // Represents the 'read' keyword
+    elsesym       // Represents the 'else' keyword
+} token_type;
 
 // Struct to represent token
 typedef struct
 {
     char lexeme[MAX_BUFFER_LENGTH + 1]; // String representation of token (Ex: "+", "-", "end")
-    char value[MAX_BUFFER_LENGTH + 1]; // Value/Type of token
+    char value[MAX_BUFFER_LENGTH + 1];  // Value/Type of token
 } token;
 
 typedef struct
 {
     token *tokens; // Pointer to array of token structs
-    int size; // Num of tokens in list
-    int capacity; // Capacity of list
+    int size;      // Num of tokens in list
+    int capacity;  // Capacity of list
 } list;
 
 list *token_list; // Global pointer to list that holds all tokens
@@ -96,13 +96,13 @@ void print_both(const char *format, ...)
 void print_source_code()
 {
     char c;
-    char lastChar = 0;  // To keep track of the last character printed
+    char lastChar = 0; // To keep track of the last character printed
     while ((c = fgetc(input_file)) != EOF)
     {
         print_both("%c", c);
         lastChar = c;
     }
-    if (lastChar != '\n')  // If the last character wasn't a newline, print one
+    if (lastChar != '\n') // If the last character wasn't a newline, print one
         print_both("\n");
     rewind(input_file); // Reset file pointer to the beginning of the file
 }
@@ -283,10 +283,10 @@ void print_tokens(list *l)
     }
 
     // Print a newline if we haven't reached the last token
-    if (counter < l->size - 1){
+    if (counter < l->size - 1)
+    {
         print_both("\n");
     }
-    
 }
 
 int main(int argc, char *argv[])
@@ -327,44 +327,49 @@ int main(int argc, char *argv[])
 
     while ((c = fgetc(input_file)) != EOF)
     {
-        if (iscntrl(c) || isspace(c)) // skip control characters and whitespace
+        if (iscntrl(c) || isspace(c)) // Skip control characters and whitespace
         {
             c = fgetc(input_file);
         }
-        if (isdigit(c)) // handle numbers
+        if (isdigit(c)) // Handle numbers
         {
             buffer[buffer_index++] = c;
             while (1)
             {
                 char nextc = peekc();
-                if (isspace(nextc) || is_special_symbol(nextc))
+                if (isspace(nextc) || is_special_symbol(nextc)) // If next character is a space or special symbol, we've reached the end of the number
                 {
                     token t;
                     if (buffer_index > MAX_NUMBER_LENGTH)
                     {
+                        // Number is too long
                         print_both("%10s %20s\n", buffer, "ERROR: NUMBER TOO LONG");
                     }
                     else
                     {
+                        // Number is valid
                         print_both("%10s %20d\n", buffer, numbersym);
                         sprintf(t.value, "%d", numbersym);
                         strcpy(t.lexeme, buffer);
                         append_token(token_list, t);
                     }
 
+                    // Clear buffer and break out of loop
                     clear_to_index(buffer, buffer_index);
                     buffer_index = 0;
                     break;
                 }
                 else if (isdigit(nextc))
                 {
+                    // If next character is a digit, add it to the buffer
                     c = getc(input_file);
                     buffer[buffer_index++] = c;
                 }
-                else if (nextc == EOF)
+                else if (nextc == EOF) // This is the last character in the file
                     break;
                 else if (isalpha(nextc))
                 {
+                    // Invalid number
                     token t;
                     print_both("%10s %20d\n", buffer, numbersym);
                     sprintf(t.value, "%d", numbersym);
@@ -376,15 +381,15 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        else if (isalpha(c)) // handle identifiers and reserved words
+        else if (isalpha(c)) // Handle identifiers and reserved words
         {
             buffer[buffer_index++] = c;
             while (1)
             {
                 char nextc = peekc();
-                if (isspace(nextc) || is_special_symbol(nextc) || nextc == EOF)
+                if (isspace(nextc) || is_special_symbol(nextc) || nextc == EOF) // If next character is a space or special symbol, we've reached the end of the identifier
                 {
-                    // check if reserved word
+                    // Check reserved words
                     int token_value = handle_reserved_word(buffer);
                     if (token_value)
                     {
@@ -397,15 +402,17 @@ int main(int argc, char *argv[])
                         buffer_index = 0;
                         break;
                     }
-                    else // identifier
+                    else
                     {
+                        // Identifier
                         token t;
-                        if (buffer_index > MAX_IDENTIFIER_LENGTH)
+                        if (buffer_index > MAX_IDENTIFIER_LENGTH) // Check if identifier is too long
                         {
                             print_both("%10s %20s\n", buffer, "ERROR: IDENTIFIER TOO LONG");
                         }
                         else
                         {
+                            // Valid identifier
                             print_both("%10s %20d\n", buffer, identsym);
                             sprintf(t.value, "%d", identsym);
                             strcpy(t.lexeme, buffer);
@@ -418,26 +425,27 @@ int main(int argc, char *argv[])
                     }
                     break;
                 }
-                else if (isalnum(nextc))
+                else if (isalnum(nextc)) // If next character is a letter or digit, add it to the buffer
                 {
                     c = getc(input_file);
                     buffer[buffer_index++] = c;
                 }
             }
         }
-        else if (is_special_symbol(c)) // handle special symbols
+        else if (is_special_symbol(c)) // Handle special symbols
         {
             buffer[buffer_index++] = c;
             char nextc = peekc();
 
-            if (is_special_symbol(nextc))
+            if (is_special_symbol(nextc)) // Current character is special and so is the next
             {
-                // handle block comments
+                // Handle block comments
                 if (c == '/' && nextc == '*')
                 {
+                    // Clear buffer
                     clear_to_index(buffer, buffer_index);
                     buffer_index = 0;
-                    while (1)
+                    while (1) // Consume characters until we reach the end of the block comment
                     {
                         c = getc(input_file);
                         nextc = peekc();
@@ -450,12 +458,13 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
-                // handle single line comments
+                // Handle single line comments
                 if (c == '/' && nextc == '/')
                 {
+                    // Clear buffer
                     clear_to_index(buffer, buffer_index);
                     buffer_index = 0;
-                    while (1)
+                    while (1) // Consume characters until we reach the end of the line
                     {
                         c = getc(input_file);
                         nextc = peekc();
@@ -467,15 +476,19 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
+                // We have two pontentially valid symbols, so we need to check if they make a valid symbol
+
                 c = getc(input_file);
                 buffer[buffer_index++] = c;
                 token t;
                 int token_value = handle_special_symbol(buffer);
                 if (!token_value)
+                    // All symbols are invalid
                     for (int i = 0; i < buffer_index; i++)
                         print_both("%10c %20s\n", buffer[i], "ERROR: INVALID SYMBOL");
                 else
                 {
+                    // Both symbols make a valid symbol
                     print_both("%10s %20d\n", buffer, token_value);
                     sprintf(t.value, "%d", token_value);
                     strcpy(t.lexeme, buffer);
@@ -487,6 +500,7 @@ int main(int argc, char *argv[])
             }
             else
             {
+                // Handle single special symbol
                 token t;
                 int token_value = handle_special_symbol(buffer);
                 if (!token_value)
@@ -507,9 +521,9 @@ int main(int argc, char *argv[])
 
     print_both("\n");
     print_both("Token List:\n");
-    print_tokens(token_list);
+    print_tokens(token_list); // Print tokens to console and output file
     printf("\n");
-    destroy_list(token_list);
+    destroy_list(token_list); // Free memory used by token list
 
     return 0;
 }
