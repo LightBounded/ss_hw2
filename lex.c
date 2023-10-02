@@ -133,7 +133,7 @@ int reservedToToken(char *buffer)
     int reserved_word_values[] = {constsym, varsym, procsym, callsym, beginsym, endsym, ifsym, thensym, elsesym, whilesym, dosym, readsym, writesym, ifelsym};
     int num_reserved_words = sizeof(reserved_words) / sizeof(reserved_words[0]);
 
-    //loop through reserved words and check if buffer matches any of them
+    // loop through reserved words and check if buffer matches any of them
     for (int i = 0; i < num_reserved_words; i++)
     {
         if (strcmp(buffer, reserved_words[i]) == 0)
