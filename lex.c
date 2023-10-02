@@ -183,77 +183,62 @@ int specialSymbolCheck(char c)
     return 0;
 }
 
-// Create and initialize new list for storing tokens
-list *create_list()
+// creates and returns lists for tokens, properally allocating memory
+list *createNewList()
 {
-    list *l = malloc(sizeof(list));
-    l->size = 0;
-    l->capacity = 10;
-    l->tokens = malloc(sizeof(token) * l->capacity);
-    return l;
+    list *newList = malloc(sizeof(list));                        // Allocate memory for list
+    newList->size = 0;                                           // initial size is zero
+    newList->capacity = 10;                                      // max cap of 10
+    newList->tokens = malloc(sizeof(token) * newList->capacity); // allocate memory for tokens
+
+    return newList;
 }
 
-// Free the memory used by a list and its tokens
-list *destroy_list(list *l)
+// completely frees memory of list (starting with tokens)
+list *freeList(list *l)
 {
     free(l->tokens);
     free(l);
+
     return NULL;
 }
 
-// Append a token to a list, resizing the list if necessary
-list *append_token(list *l, token t)
+// Given the list and new token, adds it to the list and resizes IF size equals capacity
+list *appendToken(list *list, token t)
 {
-    if (l->size == l->capacity)
+    if (list->size == list->capacity)
     {
-        l->capacity *= 2;
-        l->tokens = realloc(l->tokens, sizeof(token) * l->capacity);
+        list->capacity *= 2;
+        token *new_tokens = malloc(sizeof(token) * list->capacity);
+        for (int i = 0; i < list->size; i++)
+        {
+            new_tokens[i] = list->tokens[i];
+        }
+        free(list->tokens);
+        list->tokens = new_tokens;
     }
-    l->tokens[l->size++] = t;
-    return l;
+    list->tokens[list->size] = t;
+    list->size++;
+    return list;
 }
 
-// Add a token to a list, resizing the list if necessary
-void add_token(list *l, token t)
-{
-    if (l->size == l->capacity)
-    {
-        l->capacity *= 2;
-        l->tokens = realloc(l->tokens, sizeof(token) * l->capacity);
-    }
-    l->tokens[l->size++] = t;
-}
-
-// Print the lexeme table to both the console and output file
-void print_lexeme_table(list *l)
+// prints all of the tokens in list to output and console
+void printAllTokens(list *l)
 {
     for (int i = 0; i < l->size; i++)
-        printOutput("%10s %20s\n", l->tokens[i].lexeme, l->tokens[i].value);
-}
-
-// Print the tokens to both the console and output file
-void print_tokens(list *l)
-{
-    int counter; // Counter to keep track of the number of tokens printed for sake of ommitting extra new line character at end of file
-
-    for (int i = 0; i < l->size; i++)
     {
-        printOutput("%s ", l->tokens[i].value);
-        char identifier_value[3] = {0}, number_value[3] = {0};
-        sprintf(identifier_value, "%d", identsym);
-        sprintf(number_value, "%d", numbersym);
-
-        // Check if the token value matches identifier or number and print its lexeme
-        if (strcmp(l->tokens[i].value, identifier_value) == 0 || strcmp(l->tokens[i].value, number_value) == 0)
-            printOutput("%s ", l->tokens[i].lexeme);
-        counter++;
+        token t = l->tokens[i];
+        printOutput("%s", t.value);
+        if (strcmp(t.value, "2") == 0 || strcmp(t.value, "3") == 0)
+        {
+            printOutput(" %s", t.lexeme);
+        }
+        if (i < l->size - 1)
+        {
+            printOutput(" ");
+        }
     }
-
-    // Print a newline if we haven't reached the last token
-    if (counter < l->size - 1)
-    {
-        printOutput("\n");
-    }
+    printOutput("\n");
 }
 
 int main(int argc, char *argv[])
@@ -286,7 +271,7 @@ int main(int argc, char *argv[])
     printOutput("\n");
     printOutput("%10s %20s\n", "lexeme", "token type");
 
-    token_list = create_list();
+    token_list = createNewList();
 
     char c;
     char buffer[TOKEN_LEN_MAX + 1] = {0};
@@ -318,7 +303,7 @@ int main(int argc, char *argv[])
                         printOutput("%10s %20d\n", buffer, numbersym);
                         sprintf(t.value, "%d", numbersym);
                         strcpy(t.lexeme, buffer);
-                        append_token(token_list, t);
+                        appendToken(token_list, t);
                     }
 
                     // Clear buffer and break out of loop
@@ -341,7 +326,7 @@ int main(int argc, char *argv[])
                     printOutput("%10s %20d\n", buffer, numbersym);
                     sprintf(t.value, "%d", numbersym);
                     strcpy(t.lexeme, buffer);
-                    append_token(token_list, t);
+                    appendToken(token_list, t);
                     cutString(buffer, buffer_index);
                     buffer_index = 0;
                     break;
@@ -364,7 +349,7 @@ int main(int argc, char *argv[])
                         printOutput("%10s %20d\n", buffer, token_value);
                         sprintf(t.value, "%d", token_value);
                         strcpy(t.lexeme, buffer);
-                        append_token(token_list, t);
+                        appendToken(token_list, t);
                         cutString(buffer, buffer_index);
                         buffer_index = 0;
                         break;
@@ -383,7 +368,7 @@ int main(int argc, char *argv[])
                             printOutput("%10s %20d\n", buffer, identsym);
                             sprintf(t.value, "%d", identsym);
                             strcpy(t.lexeme, buffer);
-                            append_token(token_list, t);
+                            appendToken(token_list, t);
                         }
 
                         cutString(buffer, buffer_index);
@@ -459,7 +444,7 @@ int main(int argc, char *argv[])
                     printOutput("%10s %20d\n", buffer, token_value);
                     sprintf(t.value, "%d", token_value);
                     strcpy(t.lexeme, buffer);
-                    append_token(token_list, t);
+                    appendToken(token_list, t);
                 }
 
                 cutString(buffer, buffer_index);
@@ -477,7 +462,7 @@ int main(int argc, char *argv[])
                     printOutput("%10s %20d\n", buffer, token_value);
                     sprintf(t.value, "%d", token_value);
                     strcpy(t.lexeme, buffer);
-                    append_token(token_list, t);
+                    appendToken(token_list, t);
                 }
 
                 cutString(buffer, buffer_index);
@@ -488,9 +473,9 @@ int main(int argc, char *argv[])
 
     printOutput("\n");
     printOutput("Token List:\n");
-    print_tokens(token_list); // Print tokens to console and output file
+    printAllTokens(token_list); // Print tokens to console and output file
     printf("\n");
-    destroy_list(token_list); // Free memory used by token list
+    freeList(token_list); // Free memory used by token list
 
     return 0;
 }
