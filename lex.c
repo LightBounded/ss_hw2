@@ -126,6 +126,7 @@ void cutString(char *string, int cutoff)
     }
 }
 
+// checks if the given string is a reserved word and returns its token value
 // in = reserved word, out = token value
 int reservedToToken(char *buffer)
 {
@@ -145,72 +146,41 @@ int reservedToToken(char *buffer)
     return 0; // invalid word
 }
 
-// Check if given buffer matches any special symbol, return its corresponding token value
-int handle_special_symbol(char *buffer)
+// checks if the given string matches any special symbo and return its token value
+// this is literally the same as the reservedToToken function but with different arrays
+int specialToToken(char *buffer)
 {
-    if (strcmp(buffer, "+") == 0)
-        return plussym;
-    else if (strcmp(buffer, "-") == 0)
-        return minussym;
-    else if (strcmp(buffer, "*") == 0)
-        return multsym;
-    else if (strcmp(buffer, "/") == 0)
-        return slashsym;
-    else if (strcmp(buffer, "(") == 0)
-        return lparentsym;
-    else if (strcmp(buffer, ")") == 0)
-        return rparentsym;
-    else if (strcmp(buffer, ",") == 0)
-        return commasym;
-    else if (strcmp(buffer, ";") == 0)
-        return semicolonsym;
-    else if (strcmp(buffer, ".") == 0)
-        return periodsym;
-    else if (strcmp(buffer, "=") == 0)
-        return eqsym;
-    else if (strcmp(buffer, "<") == 0)
-        return lessym;
-    else if (strcmp(buffer, ">") == 0)
-        return gtrsym;
-    else if (strcmp(buffer, ":=") == 0)
-        return becomessym;
-    else if (strcmp(buffer, "<=") == 0)
-        return leqsym;
-    else if (strcmp(buffer, ">=") == 0)
-        return geqsym;
-    else if (strcmp(buffer, "<>") == 0)
-        return neqsym;
-    return 0; // invalid special symbol
+    char *special_symbols[] = {"+", "-", "*", "/", "(", ")", ",", ";", ".", "=", "<", ">", ":=", "<=", ">=", "<>"};
+    int special_symbol_values[] = {plussym, minussym, multsym, slashsym, lparentsym, rparentsym, commasym, semicolonsym, periodsym, eqsym, lessym, gtrsym, becomessym, leqsym, geqsym, neqsym};
+    int num_special_symbols = sizeof(special_symbols) / sizeof(special_symbols[0]);
+
+    // loop through special symbols and check if buffer matches any of them
+    for (int i = 0; i < num_special_symbols; i++)
+    {
+        if (strcmp(buffer, special_symbols[i]) == 0)
+        {
+            return special_symbol_values[i];
+        }
+    }
+
+    return 0; // invalid symbol
 }
 
-// Check if a given character is a special symbol
-int is_special_symbol(char c)
+// checks if a character is a special symbol, returning 1 for true and 0 for false
+int specialSymbolCheck(char c)
 {
-    // If character matches, return 1 else return 0
-    return (c == '+' ||
-            c == '-' ||
-            c == '*' ||
-            c == '/' ||
-            c == '(' ||
-            c == ')' ||
-            c == '=' ||
-            c == ',' ||
-            c == '.' ||
-            c == '<' ||
-            c == '>' ||
-            c == ':' ||
-            c == ';' ||
-            c == '&' ||
-            c == '%' ||
-            c == '!' ||
-            c == '@' ||
-            c == '#' ||
-            c == '$' ||
-            c == '?' ||
-            c == '^' ||
-            c == '`' ||
-            c == '~' ||
-            c == '|');
+    char special_symbols[] = "+-*/()=,.<>:;&%!?@#$^`~|";
+    int num_special_symbols = sizeof(special_symbols) / sizeof(special_symbols[0]);
+
+    for (int i = 0; i < num_special_symbols; i++)
+    {
+        if (c == special_symbols[i])
+        {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 // Create and initialize new list for storing tokens
@@ -334,7 +304,7 @@ int main(int argc, char *argv[])
             while (1)
             {
                 char nextc = peekc();
-                if (isspace(nextc) || is_special_symbol(nextc)) // If next character is a space or special symbol, we've reached the end of the number
+                if (isspace(nextc) || specialSymbolCheck(nextc)) // If next character is a space or special symbol, we've reached the end of the number
                 {
                     token t;
                     if (buffer_index > NUM_LEN_MAX)
@@ -384,7 +354,7 @@ int main(int argc, char *argv[])
             while (1)
             {
                 char nextc = peekc();
-                if (isspace(nextc) || is_special_symbol(nextc) || nextc == EOF) // If next character is a space or special symbol, we've reached the end of the identifier
+                if (isspace(nextc) || specialSymbolCheck(nextc) || nextc == EOF) // If next character is a space or special symbol, we've reached the end of the identifier
                 {
                     // Check reserved words
                     int token_value = reservedToToken(buffer);
@@ -429,12 +399,12 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        else if (is_special_symbol(c)) // Handle special symbols
+        else if (specialSymbolCheck(c)) // Handle special symbols
         {
             buffer[buffer_index++] = c;
             char nextc = peekc();
 
-            if (is_special_symbol(nextc)) // Current character is special and so is the next
+            if (specialSymbolCheck(nextc)) // Current character is special and so is the next
             {
                 // Handle block comments
                 if (c == '/' && nextc == '*')
@@ -478,7 +448,7 @@ int main(int argc, char *argv[])
                 c = getc(inputFile);
                 buffer[buffer_index++] = c;
                 token t;
-                int token_value = handle_special_symbol(buffer);
+                int token_value = specialToToken(buffer);
                 if (!token_value)
                     // All symbols are invalid
                     for (int i = 0; i < buffer_index; i++)
@@ -499,7 +469,7 @@ int main(int argc, char *argv[])
             {
                 // Handle single special symbol
                 token t;
-                int token_value = handle_special_symbol(buffer);
+                int token_value = specialToToken(buffer);
                 if (!token_value)
                     printOutput("%10c %20s\n", c, "ERROR: INVALID SYMBOL");
                 else
