@@ -1,13 +1,12 @@
-/*
-    COP 3402 Systems Software
-    Lexical Analyzer
-    Authored by Caleb Rivera and Matthew Labrada
-*/
+/* Pharit Smitasin
+ * COP 3402 Fall 2023
+ * HW2
+ */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <stdarg.h>
 
 #define MAX_IDENTIFIER_LENGTH 11
@@ -17,42 +16,42 @@
 FILE *input_file;
 FILE *output_file;
 
-// Define an enumeration for token types
+// list of enumerations for token types
 typedef enum
 {
-    skipsym = 1,  // Represents a skip symbol
-    identsym,     // Represents an identifier
-    numbersym,    // Represents a number
-    plussym,      // Represents the '+' symbol
-    minussym,     // Represents the '-' symbol
-    multsym,      // Represents the '*' symbol
-    slashsym,     // Represents the '/' symbol
-    ifelsym,      // Represents a combined 'if', 'else'
-    eqsym,        // Represents the '=' symbol
-    neqsym,       // Represents the '<>' symbol
-    lessym,       // Represents the '<' symbol
-    leqsym,       // Represents the '<=' symbol
-    gtrsym,       // Represents the '>' symbol
-    geqsym,       // Represents the '>=' symbol
-    lparentsym,   // Represents the '(' symbol
-    rparentsym,   // Represents the ')' symbol
-    commasym,     // Represents the ',' symbol
-    semicolonsym, // Represents the ';' symbol
-    periodsym,    // Represents the '.' symbol
-    becomessym,   // Represents the ':=' symbol
-    beginsym,     // Represents the 'begin' keyword
-    endsym,       // Represents the 'end' keyword
-    ifsym,        // Represents the 'if' keyword
-    thensym,      // Represents the 'then' keyword
-    whilesym,     // Represents the 'while' keyword
-    dosym,        // Represents the 'do' keyword
-    callsym,      // Represents the 'call' keyword
-    constsym,     // Represents the 'const' keyword
-    varsym,       // Represents the 'var' keyword
-    procsym,      // Represents the 'procedure' keyword
-    writesym,     // Represents the 'write' keyword
-    readsym,      // Represents the 'read' keyword
-    elsesym       // Represents the 'else' keyword
+    skipsym = 1,  //  skip symbol
+    identsym,     //  identifier symbol
+    numbersym,    //  number symbol
+    plussym,      //  '+' symbol
+    minussym,     //  '-' symbol
+    multsym,      //  '*' symbol
+    slashsym,     //  '/' symbol
+    ifelsym,      //  'if', 'else' keyword
+    eqsym,        //  '=' symbol
+    neqsym,       //  '<>' symbol
+    lessym,       //  '<' symbol
+    leqsym,       //  '<=' symbol
+    gtrsym,       //  '>' symbol
+    geqsym,       //  '>=' symbol
+    lparentsym,   //  '(' symbol
+    rparentsym,   //  ')' symbol
+    commasym,     //  ',' symbol
+    semicolonsym, //  ';' symbol
+    periodsym,    //  '.' symbol
+    becomessym,   //  ':=' symbol
+    beginsym,     //  'begin' keyword
+    endsym,       //  'end' keyword
+    ifsym,        //  'if' keyword
+    thensym,      //  'then' keyword
+    whilesym,     //  'while' keyword
+    dosym,        //  'do' keyword
+    callsym,      //  'call' keyword
+    constsym,     //  'const' keyword
+    varsym,       //  'var' keyword
+    procsym,      //  'procedure' keyword
+    writesym,     //  'write' keyword
+    readsym,      //  'read' keyword
+    elsesym       //  'else' keyword
 } token_type;
 
 // Struct to represent token
