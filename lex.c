@@ -243,132 +243,135 @@ void printAllTokens(list *l)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3)
-    {
-        printOutput("Usage: %s <input file> <output file>\n", argv[0]);
-        return 1;
-    }
-
+    // establishing the files to read from, and one to write to (input/output)
     inputFile = fopen(argv[1], "r");
     outputFile = fopen(argv[2], "w");
 
-    if (inputFile == NULL)
-    {
-        printOutput("Error: Could not open input file %s\n", argv[1]);
-        return 1;
-    }
-
-    if (outputFile == NULL)
-    {
-        printOutput("Error: Could not open output file %s\n", argv[2]);
-        return 1;
-    }
-
+    // beginning of printing for top of output to beginning of lexeme table
     printOutput("Source Program:\n");
     printOriginal();
     printOutput("\n");
+
     printOutput("Lexeme Table:\n");
     printOutput("\n");
     printOutput("%10s %20s\n", "lexeme", "token type");
 
+    // creating the list of tokens
     token_list = createNewList();
 
     char c;
+
     char buffer[TOKEN_LEN_MAX + 1] = {0};
     int buffer_index = 0;
 
+    // loop through the input file and check for tokens until end of file (EOF)
+    // this loop goes char by char
     while ((c = fgetc(inputFile)) != EOF)
     {
+
         if (iscntrl(c) || isspace(c)) // Skip control characters and whitespace
         {
             c = fgetc(inputFile);
         }
-        if (isdigit(c)) // Handle numbers
+
+        // this loop handles all digits
+        if (isdigit(c))
         {
             buffer[buffer_index++] = c;
+
             while (1)
             {
+
                 char nextc = peekc();
+
                 if (isspace(nextc) || specialSymbolCheck(nextc)) // If next character is a space or special symbol, we've reached the end of the number
                 {
                     token t;
                     if (buffer_index > NUM_LEN_MAX)
                     {
-                        // Number is too long
+                        // given number is larger than max length
                         printOutput("%10s %20s\n", buffer, "ERROR: NUMBER TOO LONG");
                     }
                     else
                     {
-                        // Number is valid
+                        // given number is VALID
                         printOutput("%10s %20d\n", buffer, numbersym);
                         sprintf(t.value, "%d", numbersym);
                         strcpy(t.lexeme, buffer);
                         appendToken(token_list, t);
                     }
 
-                    // Clear buffer and break out of loop
+                    // cut the buffer up to buffer index and then reset index
                     cutString(buffer, buffer_index);
                     buffer_index = 0;
-                    break;
+
+                    break; // done with loop, break
                 }
                 else if (isdigit(nextc))
                 {
-                    // If next character is a digit, add it to the buffer
+                    // adds digit to buffet
                     c = getc(inputFile);
                     buffer[buffer_index++] = c;
                 }
-                else if (nextc == EOF) // This is the last character in the file
-                    break;
+                else if (nextc == EOF)
+                    break; // end of file reached, break from loop
                 else if (isalpha(nextc))
                 {
-                    // Invalid number
-                    token t;
+                    // next char is invalid number
+                    token tokenOfInvalid;
+
                     printOutput("%10s %20d\n", buffer, numbersym);
-                    sprintf(t.value, "%d", numbersym);
-                    strcpy(t.lexeme, buffer);
-                    appendToken(token_list, t);
+
+                    sprintf(tokenOfInvalid.value, "%d", numbersym);
+                    strcpy(tokenOfInvalid.lexeme, buffer);
+
+                    appendToken(token_list, tokenOfInvalid);
                     cutString(buffer, buffer_index);
-                    buffer_index = 0;
+
+                    buffer_index = 0; // reset index to start of buffer
                     break;
                 }
             }
         }
-        else if (isalpha(c)) // Handle identifiers and reserved words
+        else if (isalpha(c))
+        // idents and reserve words
         {
             buffer[buffer_index++] = c;
             while (1)
             {
                 char nextc = peekc();
-                if (isspace(nextc) || specialSymbolCheck(nextc) || nextc == EOF) // If next character is a space or special symbol, we've reached the end of the identifier
+                // end of the ident will be a special symb/space
+                if (isspace(nextc) || specialSymbolCheck(nextc) || nextc == EOF)
                 {
-                    // Check reserved words
+                    // handling for reserved words, checks first
                     int token_value = reservedToToken(buffer);
                     if (token_value)
                     {
-                        token t;
+                        token reserve;
                         printOutput("%10s %20d\n", buffer, token_value);
-                        sprintf(t.value, "%d", token_value);
-                        strcpy(t.lexeme, buffer);
-                        appendToken(token_list, t);
+                        sprintf(reserve.value, "%d", token_value);
+                        strcpy(reserve.lexeme, buffer);
+                        appendToken(token_list, reserve);
                         cutString(buffer, buffer_index);
                         buffer_index = 0;
                         break;
                     }
                     else
                     {
-                        // Identifier
-                        token t;
+                        // identifier handling
+                        token ident;
+
                         if (buffer_index > ID_LEN_MAX) // Check if identifier is too long
                         {
                             printOutput("%10s %20s\n", buffer, "ERROR: IDENTIFIER TOO LONG");
                         }
+
                         else
                         {
-                            // Valid identifier
                             printOutput("%10s %20d\n", buffer, identsym);
-                            sprintf(t.value, "%d", identsym);
-                            strcpy(t.lexeme, buffer);
-                            appendToken(token_list, t);
+                            sprintf(ident.value, "%d", identsym);
+                            strcpy(ident.lexeme, buffer);
+                            appendToken(token_list, ident);
                         }
 
                         cutString(buffer, buffer_index);
@@ -377,27 +380,31 @@ int main(int argc, char *argv[])
                     }
                     break;
                 }
-                else if (isalnum(nextc)) // If next character is a letter or digit, add it to the buffer
+                else if (isalnum(nextc))
+                // if char or int, add to buffer
                 {
                     c = getc(inputFile);
                     buffer[buffer_index++] = c;
                 }
             }
         }
-        else if (specialSymbolCheck(c)) // Handle special symbols
+        else if (specialSymbolCheck(c))
+        // for handling special symbols
         {
             buffer[buffer_index++] = c;
             char nextc = peekc();
 
-            if (specialSymbolCheck(nextc)) // Current character is special and so is the next
+            if (specialSymbolCheck(nextc))
             {
-                // Handle block comments
+                // for handling multi line comments
                 if (c == '/' && nextc == '*')
                 {
-                    // Clear buffer
+                    // cut string until buffer index and reset index
                     cutString(buffer, buffer_index);
                     buffer_index = 0;
-                    while (1) // Consume characters until we reach the end of the block comment
+
+                    while (1)
+                    // gets characters until the end of the block comment
                     {
                         c = getc(inputFile);
                         nextc = peekc();
@@ -410,13 +417,15 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
-                // Handle single line comments
+                // single line comment handling
                 if (c == '/' && nextc == '/')
                 {
-                    // Clear buffer
+                    // cut buffer until buffer index and reset index
                     cutString(buffer, buffer_index);
                     buffer_index = 0;
-                    while (1) // Consume characters until we reach the end of the line
+
+                    while (1)
+                    // until the newline, gets characters
                     {
                         c = getc(inputFile);
                         nextc = peekc();
@@ -428,23 +437,23 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
-                // We have two pontentially valid symbols, so we need to check if they make a valid symbol
-
                 c = getc(inputFile);
+
                 buffer[buffer_index++] = c;
-                token t;
+                token doubleSpecial;
                 int token_value = specialToToken(buffer);
+
                 if (!token_value)
-                    // All symbols are invalid
+                    // given 2 symbols are invalid
                     for (int i = 0; i < buffer_index; i++)
                         printOutput("%10c %20s\n", buffer[i], "ERROR: INVALID SYMBOL");
                 else
                 {
-                    // Both symbols make a valid symbol
+                    // both valid symbols
                     printOutput("%10s %20d\n", buffer, token_value);
-                    sprintf(t.value, "%d", token_value);
-                    strcpy(t.lexeme, buffer);
-                    appendToken(token_list, t);
+                    sprintf(doubleSpecial.value, "%d", token_value);
+                    strcpy(doubleSpecial.lexeme, buffer);
+                    appendToken(token_list, doubleSpecial);
                 }
 
                 cutString(buffer, buffer_index);
@@ -452,17 +461,17 @@ int main(int argc, char *argv[])
             }
             else
             {
-                // Handle single special symbol
-                token t;
+                // for the case of single special symbols
+                token singleSpecial;
                 int token_value = specialToToken(buffer);
                 if (!token_value)
                     printOutput("%10c %20s\n", c, "ERROR: INVALID SYMBOL");
                 else
                 {
                     printOutput("%10s %20d\n", buffer, token_value);
-                    sprintf(t.value, "%d", token_value);
-                    strcpy(t.lexeme, buffer);
-                    appendToken(token_list, t);
+                    sprintf(singleSpecial.value, "%d", token_value);
+                    strcpy(singleSpecial.lexeme, buffer);
+                    appendToken(token_list, singleSpecial);
                 }
 
                 cutString(buffer, buffer_index);
@@ -471,11 +480,14 @@ int main(int argc, char *argv[])
         }
     }
 
+    // this is where all the printing and freeing happens for list
     printOutput("\n");
     printOutput("Token List:\n");
-    printAllTokens(token_list); // Print tokens to console and output file
-    printf("\n");
-    freeList(token_list); // Free memory used by token list
 
-    return 0;
-}
+    printAllTokens(token_list);
+    printf("\n");
+
+    freeList(token_list);
+
+    return 0; // end of program
+} // end of MAIN METHOD
