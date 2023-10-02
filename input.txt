@@ -1,5 +1,6 @@
-x, y var;
+x, y, bruh var;
 begin
     100 := y;
-    y + 56 := x;
+    y + 69 := x;
+    bruh := y
 end.
