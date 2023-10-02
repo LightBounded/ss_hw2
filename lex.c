@@ -9,14 +9,16 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#define MAX_IDENTIFIER_LENGTH 11
-#define MAX_NUMBER_LENGTH 5
-#define MAX_BUFFER_LENGTH 1000
+// These defined values are the max lengths for identifiers, numbers, and tokens
+#define ID_LEN_MAX 11
+#define NUM_LEN_MAX 5
+#define TOKEN_LEN_MAX 1000
 
-FILE *input_file;
-FILE *output_file;
+FILE *inputFile;
+FILE *outputFile;
 
 // list of enumerations for token types
+// with skipsym starting at 1, the rest of the enumerations will be assigned values incrementing by 1
 typedef enum
 {
     skipsym = 1,  //  skip symbol
@@ -54,97 +56,93 @@ typedef enum
     elsesym       //  'else' keyword
 } token_type;
 
-// Struct to represent token
+// token struct
 typedef struct
 {
-    char lexeme[MAX_BUFFER_LENGTH + 1]; // String representation of token (Ex: "+", "-", "end")
-    char value[MAX_BUFFER_LENGTH + 1];  // Value/Type of token
+    char value[TOKEN_LEN_MAX + 1];
+    char lexeme[TOKEN_LEN_MAX + 1];
 } token;
 
+// list of tokens struct
 typedef struct
 {
-    token *tokens; // Pointer to array of token structs
-    int size;      // Num of tokens in list
-    int capacity;  // Capacity of list
+    token *tokens;
+    int size;
+    int capacity;
 } list;
 
-list *token_list; // Global pointer to list that holds all tokens
+// this is the list of tokens that will be used to store the tokens for the parser
+list *token_list;
 
-// Peek at the next character from the input file without consuming it
+// reads next character from input file
 char peekc()
 {
-    int c = getc(input_file);
-    ungetc(c, input_file);
-    return (char)c;
+    int nextChar = getc(inputFile);
+    ungetc(nextChar, inputFile);
+
+    return (char)nextChar;
 }
 
-// Print formatted output to both the console and the output file
-void print_both(const char *format, ...)
+// prints output to console and output file
+void printOutput(const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    vprintf(format, args);
+
+    int result = vprintf(format, args);
     va_end(args);
 
     va_start(args, format);
-    vfprintf(output_file, format, args);
+    int fileResult = vfprintf(outputFile, format, args);
     va_end(args);
-}
 
-// Print the entire source code from the input file to both the console and the output file
-void print_source_code()
-{
-    char c;
-    char lastChar = 0; // To keep track of the last character printed
-    while ((c = fgetc(input_file)) != EOF)
+    if (result < 0 || fileResult < 0)
     {
-        print_both("%c", c);
-        lastChar = c;
+        printf("Error occurred while writing to output file.\n");
     }
-    if (lastChar != '\n') // If the last character wasn't a newline, print one
-        print_both("\n");
-    rewind(input_file); // Reset file pointer to the beginning of the file
 }
 
-// Clear a string up to a specified index by setting characters to null
-void clear_to_index(char *str, int index)
+// this prints the original to the console above the lexeme and in the the output file
+void printOriginal()
 {
-    for (int i = 0; i < index; i++)
-        str[i] = '\0';
+    char buffer[1024];
+    size_t bytesRead;
+
+    while ((bytesRead = fread(buffer, 1, sizeof(buffer), inputFile)) > 0)
+    {
+        fwrite(buffer, 1, bytesRead, stdout);
+        fwrite(buffer, 1, bytesRead, outputFile);
+    }
+
+    rewind(inputFile); // Reset file pointer to the beginning of the file
 }
 
-// Check if given buffer matches any reserved word, return its corresponding token value
-int handle_reserved_word(char *buffer)
+// sets chars in the specified string to null up to the parameter index using '\0'
+void cutString(char *string, int cutoff)
 {
-    if (strcmp(buffer, "const") == 0)
-        return constsym;
-    else if (strcmp(buffer, "var") == 0)
-        return varsym;
-    else if (strcmp(buffer, "procedure") == 0)
-        return procsym;
-    else if (strcmp(buffer, "call") == 0)
-        return callsym;
-    else if (strcmp(buffer, "begin") == 0)
-        return beginsym;
-    else if (strcmp(buffer, "end") == 0)
-        return endsym;
-    else if (strcmp(buffer, "if") == 0)
-        return ifsym;
-    else if (strcmp(buffer, "then") == 0)
-        return thensym;
-    else if (strcmp(buffer, "else") == 0)
-        return elsesym;
-    else if (strcmp(buffer, "while") == 0)
-        return whilesym;
-    else if (strcmp(buffer, "do") == 0)
-        return dosym;
-    else if (strcmp(buffer, "read") == 0)
-        return readsym;
-    else if (strcmp(buffer, "write") == 0)
-        return writesym;
-    else if (strcmp(buffer, "ifel") == 0)
-        return ifelsym;
-    return 0; // invalid reserved word
+    for (int i = 0; i < cutoff; i++)
+    {
+        string[i] = '\0';
+    }
+}
+
+// in = reserved word, out = token value
+int reservedToToken(char *buffer)
+{
+    char *reserved_words[] = {"const", "var", "procedure", "call", "begin", "end", "if", "then", "else", "while", "do", "read", "write", "ifel"};
+    int reserved_word_values[] = {constsym, varsym, procsym, callsym, beginsym, endsym, ifsym, thensym, elsesym, whilesym, dosym, readsym, writesym, ifelsym};
+    int num_reserved_words = sizeof(reserved_words) / sizeof(reserved_words[0]);
+
+    //loop through reserved words and check if buffer matches any of them
+    for (int i = 0; i < num_reserved_words; i++)
+    {
+        if (strcmp(buffer, reserved_words[i]) == 0)
+        {
+            return reserved_word_values[i];
+        }
+    }
+
+    return 0; // invalid word
 }
 
 // Check if given buffer matches any special symbol, return its corresponding token value
@@ -260,7 +258,7 @@ void add_token(list *l, token t)
 void print_lexeme_table(list *l)
 {
     for (int i = 0; i < l->size; i++)
-        print_both("%10s %20s\n", l->tokens[i].lexeme, l->tokens[i].value);
+        printOutput("%10s %20s\n", l->tokens[i].lexeme, l->tokens[i].value);
 }
 
 // Print the tokens to both the console and output file
@@ -270,21 +268,21 @@ void print_tokens(list *l)
 
     for (int i = 0; i < l->size; i++)
     {
-        print_both("%s ", l->tokens[i].value);
+        printOutput("%s ", l->tokens[i].value);
         char identifier_value[3] = {0}, number_value[3] = {0};
         sprintf(identifier_value, "%d", identsym);
         sprintf(number_value, "%d", numbersym);
 
         // Check if the token value matches identifier or number and print its lexeme
         if (strcmp(l->tokens[i].value, identifier_value) == 0 || strcmp(l->tokens[i].value, number_value) == 0)
-            print_both("%s ", l->tokens[i].lexeme);
+            printOutput("%s ", l->tokens[i].lexeme);
         counter++;
     }
 
     // Print a newline if we haven't reached the last token
     if (counter < l->size - 1)
     {
-        print_both("\n");
+        printOutput("\n");
     }
 }
 
@@ -292,43 +290,43 @@ int main(int argc, char *argv[])
 {
     if (argc != 3)
     {
-        print_both("Usage: %s <input file> <output file>\n", argv[0]);
+        printOutput("Usage: %s <input file> <output file>\n", argv[0]);
         return 1;
     }
 
-    input_file = fopen(argv[1], "r");
-    output_file = fopen(argv[2], "w");
+    inputFile = fopen(argv[1], "r");
+    outputFile = fopen(argv[2], "w");
 
-    if (input_file == NULL)
+    if (inputFile == NULL)
     {
-        print_both("Error: Could not open input file %s\n", argv[1]);
+        printOutput("Error: Could not open input file %s\n", argv[1]);
         return 1;
     }
 
-    if (output_file == NULL)
+    if (outputFile == NULL)
     {
-        print_both("Error: Could not open output file %s\n", argv[2]);
+        printOutput("Error: Could not open output file %s\n", argv[2]);
         return 1;
     }
 
-    print_both("Source Program:\n");
-    print_source_code();
-    print_both("\n");
-    print_both("Lexeme Table:\n");
-    print_both("\n");
-    print_both("%10s %20s\n", "lexeme", "token type");
+    printOutput("Source Program:\n");
+    printOriginal();
+    printOutput("\n");
+    printOutput("Lexeme Table:\n");
+    printOutput("\n");
+    printOutput("%10s %20s\n", "lexeme", "token type");
 
     token_list = create_list();
 
     char c;
-    char buffer[MAX_BUFFER_LENGTH + 1] = {0};
+    char buffer[TOKEN_LEN_MAX + 1] = {0};
     int buffer_index = 0;
 
-    while ((c = fgetc(input_file)) != EOF)
+    while ((c = fgetc(inputFile)) != EOF)
     {
         if (iscntrl(c) || isspace(c)) // Skip control characters and whitespace
         {
-            c = fgetc(input_file);
+            c = fgetc(inputFile);
         }
         if (isdigit(c)) // Handle numbers
         {
@@ -339,29 +337,29 @@ int main(int argc, char *argv[])
                 if (isspace(nextc) || is_special_symbol(nextc)) // If next character is a space or special symbol, we've reached the end of the number
                 {
                     token t;
-                    if (buffer_index > MAX_NUMBER_LENGTH)
+                    if (buffer_index > NUM_LEN_MAX)
                     {
                         // Number is too long
-                        print_both("%10s %20s\n", buffer, "ERROR: NUMBER TOO LONG");
+                        printOutput("%10s %20s\n", buffer, "ERROR: NUMBER TOO LONG");
                     }
                     else
                     {
                         // Number is valid
-                        print_both("%10s %20d\n", buffer, numbersym);
+                        printOutput("%10s %20d\n", buffer, numbersym);
                         sprintf(t.value, "%d", numbersym);
                         strcpy(t.lexeme, buffer);
                         append_token(token_list, t);
                     }
 
                     // Clear buffer and break out of loop
-                    clear_to_index(buffer, buffer_index);
+                    cutString(buffer, buffer_index);
                     buffer_index = 0;
                     break;
                 }
                 else if (isdigit(nextc))
                 {
                     // If next character is a digit, add it to the buffer
-                    c = getc(input_file);
+                    c = getc(inputFile);
                     buffer[buffer_index++] = c;
                 }
                 else if (nextc == EOF) // This is the last character in the file
@@ -370,11 +368,11 @@ int main(int argc, char *argv[])
                 {
                     // Invalid number
                     token t;
-                    print_both("%10s %20d\n", buffer, numbersym);
+                    printOutput("%10s %20d\n", buffer, numbersym);
                     sprintf(t.value, "%d", numbersym);
                     strcpy(t.lexeme, buffer);
                     append_token(token_list, t);
-                    clear_to_index(buffer, buffer_index);
+                    cutString(buffer, buffer_index);
                     buffer_index = 0;
                     break;
                 }
@@ -389,15 +387,15 @@ int main(int argc, char *argv[])
                 if (isspace(nextc) || is_special_symbol(nextc) || nextc == EOF) // If next character is a space or special symbol, we've reached the end of the identifier
                 {
                     // Check reserved words
-                    int token_value = handle_reserved_word(buffer);
+                    int token_value = reservedToToken(buffer);
                     if (token_value)
                     {
                         token t;
-                        print_both("%10s %20d\n", buffer, token_value);
+                        printOutput("%10s %20d\n", buffer, token_value);
                         sprintf(t.value, "%d", token_value);
                         strcpy(t.lexeme, buffer);
                         append_token(token_list, t);
-                        clear_to_index(buffer, buffer_index);
+                        cutString(buffer, buffer_index);
                         buffer_index = 0;
                         break;
                     }
@@ -405,20 +403,20 @@ int main(int argc, char *argv[])
                     {
                         // Identifier
                         token t;
-                        if (buffer_index > MAX_IDENTIFIER_LENGTH) // Check if identifier is too long
+                        if (buffer_index > ID_LEN_MAX) // Check if identifier is too long
                         {
-                            print_both("%10s %20s\n", buffer, "ERROR: IDENTIFIER TOO LONG");
+                            printOutput("%10s %20s\n", buffer, "ERROR: IDENTIFIER TOO LONG");
                         }
                         else
                         {
                             // Valid identifier
-                            print_both("%10s %20d\n", buffer, identsym);
+                            printOutput("%10s %20d\n", buffer, identsym);
                             sprintf(t.value, "%d", identsym);
                             strcpy(t.lexeme, buffer);
                             append_token(token_list, t);
                         }
 
-                        clear_to_index(buffer, buffer_index);
+                        cutString(buffer, buffer_index);
                         buffer_index = 0;
                         break;
                     }
@@ -426,7 +424,7 @@ int main(int argc, char *argv[])
                 }
                 else if (isalnum(nextc)) // If next character is a letter or digit, add it to the buffer
                 {
-                    c = getc(input_file);
+                    c = getc(inputFile);
                     buffer[buffer_index++] = c;
                 }
             }
@@ -442,15 +440,15 @@ int main(int argc, char *argv[])
                 if (c == '/' && nextc == '*')
                 {
                     // Clear buffer
-                    clear_to_index(buffer, buffer_index);
+                    cutString(buffer, buffer_index);
                     buffer_index = 0;
                     while (1) // Consume characters until we reach the end of the block comment
                     {
-                        c = getc(input_file);
+                        c = getc(inputFile);
                         nextc = peekc();
                         if (c == '*' && nextc == '/')
                         {
-                            c = getc(input_file);
+                            c = getc(inputFile);
                             break;
                         }
                     }
@@ -461,11 +459,11 @@ int main(int argc, char *argv[])
                 if (c == '/' && nextc == '/')
                 {
                     // Clear buffer
-                    clear_to_index(buffer, buffer_index);
+                    cutString(buffer, buffer_index);
                     buffer_index = 0;
                     while (1) // Consume characters until we reach the end of the line
                     {
-                        c = getc(input_file);
+                        c = getc(inputFile);
                         nextc = peekc();
                         if (c == '\n')
                         {
@@ -477,24 +475,24 @@ int main(int argc, char *argv[])
 
                 // We have two pontentially valid symbols, so we need to check if they make a valid symbol
 
-                c = getc(input_file);
+                c = getc(inputFile);
                 buffer[buffer_index++] = c;
                 token t;
                 int token_value = handle_special_symbol(buffer);
                 if (!token_value)
                     // All symbols are invalid
                     for (int i = 0; i < buffer_index; i++)
-                        print_both("%10c %20s\n", buffer[i], "ERROR: INVALID SYMBOL");
+                        printOutput("%10c %20s\n", buffer[i], "ERROR: INVALID SYMBOL");
                 else
                 {
                     // Both symbols make a valid symbol
-                    print_both("%10s %20d\n", buffer, token_value);
+                    printOutput("%10s %20d\n", buffer, token_value);
                     sprintf(t.value, "%d", token_value);
                     strcpy(t.lexeme, buffer);
                     append_token(token_list, t);
                 }
 
-                clear_to_index(buffer, buffer_index);
+                cutString(buffer, buffer_index);
                 buffer_index = 0;
             }
             else
@@ -503,23 +501,23 @@ int main(int argc, char *argv[])
                 token t;
                 int token_value = handle_special_symbol(buffer);
                 if (!token_value)
-                    print_both("%10c %20s\n", c, "ERROR: INVALID SYMBOL");
+                    printOutput("%10c %20s\n", c, "ERROR: INVALID SYMBOL");
                 else
                 {
-                    print_both("%10s %20d\n", buffer, token_value);
+                    printOutput("%10s %20d\n", buffer, token_value);
                     sprintf(t.value, "%d", token_value);
                     strcpy(t.lexeme, buffer);
                     append_token(token_list, t);
                 }
 
-                clear_to_index(buffer, buffer_index);
+                cutString(buffer, buffer_index);
                 buffer_index = 0;
             }
         }
     }
 
-    print_both("\n");
-    print_both("Token List:\n");
+    printOutput("\n");
+    printOutput("Token List:\n");
     print_tokens(token_list); // Print tokens to console and output file
     printf("\n");
     destroy_list(token_list); // Free memory used by token list
